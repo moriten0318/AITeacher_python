@@ -3,7 +3,12 @@ import openai
 from dotenv import load_dotenv
 import json
 
-#GPT4.0に質問する簡単なScript
+from llama_index import (
+    GPTVectorStoreIndex,
+    StorageContext,
+    load_index_from_storage,
+    download_loader
+)
 
 #APIキー取得して渡す
 load_dotenv()
@@ -12,9 +17,13 @@ print(api_key)
 openai.api_key=api_key
 
 
+
+
+
 operating =\
 "#あなたは小学校の教師です。\
 #あなたに与えた「時間」、「学習活動」、「指導上の留意点」、「評価の観点」の項目を踏まえて、「そのセクションにおける教師の発話」を答えてください。\
+#あなたの一人称は「私」です。\
 #出力する「教師の発話」とは、そのセクション内で行う学習活動や指導上の留意点の項目がすべて達成できるように、教師が生徒の前で話すような発言のことを指します。\
 「教師の発話」では、教師は授業を聞いている生徒のことを意識し、常に生徒たちの学習状況を気にかける必要があります。\
 例えば、「どうですか？理解できましたか？」「一度整理のために時間を取りますね。」などのように、時々教師が生徒に寄り添うような発言を入れてください。\
@@ -22,10 +31,40 @@ operating =\
 #教師の発話では口調を統一してください。以下の例で挙げている文章と同じ口調で話してください。\
 #教師の発話以外の内容は発言しないでください。\
 #以下は「教師の発話」の例です。\
-「みなさん、こんにちは。今日も一緒に楽しく学んでいきましょうね。さて、前回の授業では、私たちの体のどの部分が曲がるか、そしてその理由について勉強したこと、みんなは覚えていますか？\
+「みなさん、こんにちは。今日も一緒に楽しく学んでいきましょうね。さて、前回の授業で勉強した内容はみんな覚えていますか？\
 手や腕がどのように動くか、一緒に思い出してみましょう。例えば、腕を曲げるとき、どの部分が動いているか覚えてる？\
 そう、関節が動いていたよね。では、関節以外に動いている部分は何だったかな？そう、筋肉も動いているんだ。\
 どうですか？もしわからないことがあれば、遠慮なく質問してくださいね。一度整理のために時間を取りますね。」"
+
+def create_index():
+    #index用のディレクトリ作成
+    persist_dir = (os.path.dirname(__file__)+"\\").replace(os.getcwd().replace("C","c")+"\\","")
+    index_dir = persist_dir+".\\index\\"
+    if not os.path.exists(index_dir):
+        os.mkdir(index_dir)
+
+    CJKPDFReader = download_loader("CJKPDFReader")#PDFローダーを準備
+    loader=CJKPDFReader()
+
+    # dataディレクトリ内のすべてのPDFファイルを取得
+    data_dir = os.path.join(os.path.dirname(__file__), "data")
+    pdf_files = [f for f in os.listdir(data_dir) if f.endswith('.pdf')]#data内のPDFファイルの名前が入ったリストを取得
+
+
+    for filename in pdf_files:
+        print(filename)
+        #ファイルの読み込み
+        root=os.path.dirname(__file__)+"\\data\\"+filename#実行ファイルがあるディレクトリを指定
+        #rootを作業ディレクトリの相対パスに変換して読み込み↓　触るな！
+        docs = loader.load_data(root.replace(os.getcwd().replace("C","c")+"\\",""))
+        index = GPTVectorStoreIndex.from_documents(docs)#docsからindex作成
+        index.storage_context.persist(index_dir)#index保存
+    return index
+
+#インデックスから解答を生成する
+def print_response(prompt: str, index):
+    query_engine = index.as_query_engine()
+    return query_engine.query(prompt+"日本語で簡潔に答えてください")
 
 
 
@@ -77,10 +116,18 @@ def speech_generate(jsonfilename,conversation_history):
 def main():
     # 会話履歴を格納するためのリストを初期化
     conversation_history = []
-    #指示を追加
-    conversation_history.append({"role": "system", "content": operating})
 
-    speech_generate("honji_tenkai.json",conversation_history)
+    index=create_index()
+    ans=print_response("森下真優は何歳ですか？",index)
+    print(ans)
+    
+
+
+
+    #指示を追加
+    #conversation_history.append({"role": "system", "content": operating})
+
+    #speech_generate("honji_tenkai.json",conversation_history)
 
 if __name__ == "__main__":
 
