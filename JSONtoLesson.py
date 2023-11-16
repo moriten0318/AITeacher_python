@@ -15,6 +15,7 @@ openai.api_key=api_key
 operating =\
 "#あなたは小学校の教師です。\
 #あなたに与えた「時間」、「学習活動」、「指導上の留意点」、「評価の観点」の項目を踏まえて、「そのセクションにおける教師の発話」を答えてください。\
+#「学習活動」とは、授業内で生徒が達成するべき活動であり、教師の発話は学習活動が全て行えるように促すものになります。\
 #出力する「教師の発話」とは、そのセクション内で行う学習活動や指導上の留意点の項目がすべて達成できるように、教師が生徒の前で話すような発言のことを指します。\
 「教師の発話」では、教師は授業を聞いている生徒のことを意識し、常に生徒たちの学習状況を気にかける必要があります。\
 例えば、「どうですか？理解できましたか？」「一度整理のために時間を取りますね。」などのように、時々教師が生徒に寄り添うような発言を入れてください。\
@@ -69,7 +70,7 @@ def speech_generate(jsonfilename,conversation_history):
         print("\n")  # セクション間に空行を挿入
 
     # 新しいJSONデータとして保存
-    with open('updated_lesson_plan.json', 'w', encoding='utf-8') as file:
+    with open('json\\updated_lesson_plan.json', 'w', encoding='utf-8') as file:
         json.dump(lesson_data, file, ensure_ascii=False, indent=2)   
     print("処理終了です")
 

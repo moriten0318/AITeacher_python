@@ -2,6 +2,7 @@ import os
 import openai
 from dotenv import load_dotenv
 import json
+from pypdf import PdfMerger
 
 from llama_index import (
     GPTVectorStoreIndex,
@@ -10,14 +11,15 @@ from llama_index import (
     download_loader
 )
 
+data_PATH= os.path.join(os.path.dirname(__file__), "data")
+
+
+
 #APIキー取得して渡す
 load_dotenv()
 api_key = os.environ['OPENAI_API_KEY']
 print(api_key)
 openai.api_key=api_key
-
-
-
 
 
 operating =\
@@ -36,7 +38,35 @@ operating =\
 そう、関節が動いていたよね。では、関節以外に動いている部分は何だったかな？そう、筋肉も動いているんだ。\
 どうですか？もしわからないことがあれば、遠慮なく質問してくださいね。一度整理のために時間を取りますね。」"
 
+
+def combine_pdf(directory):
+
+    # ディレクトリ内のPDFファイルのリストを取得
+    pdf_files = [f for f in os.listdir(directory) if f.endswith('.pdf')]
+    pdf_files.sort()  # ファイル名でソート
+    merger = PdfMerger()
+
+    # PDFファイルが複数ある場合は結合
+    if len(pdf_files) > 1:
+        for filename in pdf_files:
+            filepath = os.path.join(directory, filename)
+            merger.append(filepath)
+
+        # 結合したPDFを保存
+        combined_pdf_path = os.path.join(directory, 'combined.pdf')
+        print("書き出しました")
+        with open(combined_pdf_path, 'wb') as out:
+            merger.write(out)
+        return combined_pdf_path
+    elif len(pdf_files) == 1:
+        # 一つのファイルの場合はそのままのパスを返す
+        return os.path.join(directory, pdf_files[0])
+    else:
+        print("dataファイルにPDFが存在しません")
+        return None
+
 def create_index():
+
     #index用のディレクトリ作成
     persist_dir = (os.path.dirname(__file__)+"\\").replace(os.getcwd().replace("C","c")+"\\","")
     index_dir = persist_dir+".\\index\\"
@@ -46,26 +76,24 @@ def create_index():
     CJKPDFReader = download_loader("CJKPDFReader")#PDFローダーを準備
     loader=CJKPDFReader()
 
-    # dataディレクトリ内のすべてのPDFファイルを取得
-    data_dir = os.path.join(os.path.dirname(__file__), "data")
-    pdf_files = [f for f in os.listdir(data_dir) if f.endswith('.pdf')]#data内のPDFファイルの名前が入ったリストを取得
+    #dataディレクトリ内の全てのPDFを結合してパスを取得する
+    pdf_dir =combine_pdf(data_PATH)
+    #ファイルの読み込み
+    root=os.path.dirname(__file__)+"\\data\\"+pdf_dir#実行ファイルがあるディレクトリを指定
+    #rootを作業ディレクトリの相対パスに変換して読み込み↓　触るな！
+    docs = loader.load_data(root.replace(os.getcwd().replace("C","c")+"\\",""))
+    index = GPTVectorStoreIndex.from_documents(docs)#docsからindex作成
+    index.storage_context.persist(index_dir)#index保存
 
-
-    for filename in pdf_files:
-        print(filename)
-        #ファイルの読み込み
-        root=os.path.dirname(__file__)+"\\data\\"+filename#実行ファイルがあるディレクトリを指定
-        #rootを作業ディレクトリの相対パスに変換して読み込み↓　触るな！
-        docs = loader.load_data(root.replace(os.getcwd().replace("C","c")+"\\",""))
-        index = GPTVectorStoreIndex.from_documents(docs)#docsからindex作成
-        index.storage_context.persist(index_dir)#index保存
+    # 結合したPDFファイルの削除
+    if pdf_dir and len(os.listdir(data_PATH)) > 1:
+        os.remove(pdf_dir)
     return index
 
 #インデックスから解答を生成する
 def print_response(prompt: str, index):
     query_engine = index.as_query_engine()
     return query_engine.query(prompt+"日本語で簡潔に答えてください")
-
 
 
 def generate_text(prompt, conversation_history):
@@ -94,7 +122,6 @@ def openjson(filename):
 def speech_generate(jsonfilename,conversation_history):
 
     lesson_data=openjson(jsonfilename)
-
     for section in lesson_data:
         print(section['時間'])
         print(f"学習活動: {section['学習活動']}")
@@ -117,16 +144,13 @@ def main():
     # 会話履歴を格納するためのリストを初期化
     conversation_history = []
 
+    #index作成
     index=create_index()
     ans=print_response("森下真優は何歳ですか？",index)
     print(ans)
     
-
-
-
     #指示を追加
     #conversation_history.append({"role": "system", "content": operating})
-
     #speech_generate("honji_tenkai.json",conversation_history)
 
 if __name__ == "__main__":
