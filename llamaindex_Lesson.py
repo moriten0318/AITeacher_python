@@ -11,6 +11,22 @@ from llama_index import (
     download_loader
 )
 
+
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+#没ファイル
+
+
+
+
 data_PATH= os.path.join(os.path.dirname(__file__), "data")
 
 
