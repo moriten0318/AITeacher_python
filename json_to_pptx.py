@@ -6,18 +6,11 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 
-#ChatGPT4が生成したJSONファイルを読み込んで、【教師の発話]をJSONに追加できる
-#ChatGPT4が生成したJSONファイルを読み込んで、[パワポのスライドを作成]できる
-
-#Web版chatGPTに出力させたJSONファイル名を入力
-json_name="honji_tenkai_1121.json"
-
-#APIキー取得して渡す
+# APIキー取得して渡す
 load_dotenv()
 api_key = os.environ['OPENAI_API_KEY']
 print(api_key)
-openai.api_key=api_key
-
+openai.api_key = api_key
 
 operating =\
 "#あなたは小学校の教師です。\
@@ -42,10 +35,7 @@ operating =\
 それでは実際に試してみましょう。時間を取るので、周りの人と協力して実験してみましょう。\
 もしわからないことがあれば、遠慮なく質問してくださいね。」"
 
-
-
 def generate_text(prompt, conversation_history):
-
     # プロンプトを会話履歴に追加
     conversation_history.append({"role": "user", "content": prompt})
 
@@ -64,12 +54,11 @@ def generate_text(prompt, conversation_history):
     return message
 
 def openjson(filename):
-    with open("json\\"+filename,encoding='utf-8') as file:
-        return (json.load(file))
+    with open("json\\" + filename, encoding='utf-8') as file:
+        return json.load(file)
     
-def speech_generate(jsonfilename,conversation_history):
-
-    lesson_data=openjson(jsonfilename)
+def speech_generate(jsonfilename, conversation_history):
+    lesson_data = openjson(jsonfilename)
 
     for section in lesson_data:
         print(section['時間'])
@@ -78,15 +67,13 @@ def speech_generate(jsonfilename,conversation_history):
         評価の観点 = section['評価の観点'] if section['評価の観点'] is not None else "なし"
         print(f"評価の観点: {評価の観点}")
 
-        teacher_speech = generate_text("学習活動:"+section["学習活動"]+"指導上の留意点:"+section["指導上の留意点"],conversation_history)
+        teacher_speech = generate_text("学習活動:" + section["学習活動"] + "指導上の留意点:" + section["指導上の留意点"], conversation_history)
         section["教師の発話"] = teacher_speech
-        print("教師の発話"+section["教師の発話"])
-        print(f"板書: {section['板書']}")
-
+        print("教師の発話" + section["教師の発話"])
         print("\n")  # セクション間に空行を挿入
 
     # 新しいJSONデータとして保存
-    with open(f'json\\updated_{jsonfilename}', 'w', encoding='utf-8') as file:
+    with open('json\\updated_lesson_plan.json', 'w', encoding='utf-8') as file:
         json.dump(lesson_data, file, ensure_ascii=False, indent=2)   
     print("処理/保存終了です")
     return lesson_data
@@ -99,10 +86,7 @@ def text_format(slidetext):
     formatted_text = ''
     for sentence in sentences:
         if sentence:
-            #sentence += '。'  # 句読点を追加
-            sentence.replace("＞", "＞\n\n")
-            sentence.replace("・", "\n・")
-            
+            sentence += '。'  # 句読点を追加
             if len(sentence) > 18:
                 addtext=""
                 char_list = [char for char in sentence]
@@ -151,20 +135,14 @@ def create_presentation(lesson_data):
 
             p.font.size = Pt(28)
 
-    pptx_name=json_name.replace(".json", "")
-    prs.save(f'powerpoint\\{pptx_name}.pptx')
+    prs.save('test_presentation.pptx')
     print("プレゼンテーション作成終了")
 
-
 def main():
-    # 会話履歴を格納するためのリストを初期化
     conversation_history = []
-    #指示を追加
     conversation_history.append({"role": "system", "content": operating})
-    lesson_data =speech_generate(json_name,conversation_history)#教師の発話を生成する→「updated+JSONファイルの名前で保存」
-    create_presentation(lesson_data)#パワポの作成関数→JSONファイルの名前.
-
+    lesson_data = speech_generate("honji_tenkai_1117.json", conversation_history)
+    create_presentation(lesson_data)
 
 if __name__ == "__main__":
-
     main()
