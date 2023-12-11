@@ -6,11 +6,20 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 
+import glob
+from comtypes import client
+import datetime
+
+#このファイル1つで完結する
 #ChatGPT4が生成したJSONファイルを読み込んで、【教師の発話]をJSONに追加できる
 #ChatGPT4が生成したJSONファイルを読み込んで、[パワポのスライドを作成]できる
 
 #Web版chatGPTに出力させたJSONファイル名を入力
 json_name="honji_tenkai_1121.json"
+OUT_dir="lessondata"
+# 今日の日付を取得
+today = datetime.date.today()
+
 
 #APIキー取得して渡す
 load_dotenv()
@@ -100,9 +109,9 @@ def text_format(slidetext):
     for sentence in sentences:
         if sentence:
             #sentence += '。'  # 句読点を追加
-            sentence.replace("＞", "＞\n\n")
-            sentence.replace("・", "\n・")
-            
+            sentence=sentence.replace("＞", "＞\n\n")
+            sentence=sentence.replace("・", "\n・")
+
             if len(sentence) > 18:
                 addtext=""
                 char_list = [char for char in sentence]
@@ -154,6 +163,28 @@ def create_presentation(lesson_data):
     pptx_name=json_name.replace(".json", "")
     prs.save(f'powerpoint\\{pptx_name}.pptx')
     print("プレゼンテーション作成終了")
+    return f'powerpoint\\{pptx_name}.pptx'
+
+
+def export_img(fname, odir):
+    application = client.CreateObject("Powerpoint.Application")
+    application.Visible = True
+    current_folder = os.getcwd()
+
+    presentation = application.Presentations.open(os.path.join(current_folder, fname))
+
+    export_path = os.path.join(current_folder, odir)
+    presentation.Export(export_path, FilterName="png")
+
+    presentation.close()
+    application.quit()
+
+def rename_img(odir):
+    file_list = glob.glob(os.path.join(odir, "*.PNG"))
+    for fname in file_list:
+        new_fname = fname.replace('スライド', 'slide').lower()
+        os.rename(fname, new_fname)
+    print("画像出力完了")
 
 
 def main():
@@ -162,8 +193,9 @@ def main():
     #指示を追加
     conversation_history.append({"role": "system", "content": operating})
     lesson_data =speech_generate(json_name,conversation_history)#教師の発話を生成する→「updated+JSONファイルの名前で保存」
-    create_presentation(lesson_data)#パワポの作成関数→JSONファイルの名前.
-
+    ppt_name=create_presentation(lesson_data)#パワポの作成関数→JSONファイルの名前.
+    export_img(ppt_name,"powerpoint")
+    rename_img("powerpoint")
 
 if __name__ == "__main__":
 
