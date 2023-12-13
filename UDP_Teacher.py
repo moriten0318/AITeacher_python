@@ -172,10 +172,30 @@ if __name__ == "__main__":
             #     UDP(new_list[i]+"@"+str(ans))
 
             for i in range(lastnum,len(new_list)):
-                print(new_list[i])
-                send_message_to_unity(new_list[i],ID, False)
-                generate_answer(new_list[i], conversation_history,ID)
-                ID+=1
+                # メッセージが「クイズに解答:」で始まるかどうかをチェック
+                if new_list[i].startswith('クイズに解答:'):
+                    # 数字部分を取得
+                    quiz_answer = new_list[i].split(':')[1]
+
+                    # ここで数字に基づいて特定の処理を行う
+                    if quiz_answer == '1':
+                        # 数字が1の場合の処理
+                        # 例: 特定の回答を送る、特定の処理を行う、など
+                        #print(1)
+                        pass
+                    elif quiz_answer == '2':
+                        # 数字が2の場合の処理
+                        #print(2)
+                        pass
+                    elif quiz_answer == '3':
+                        # 数字が3の場合の処理
+                        #print(3)
+                        pass
+                else:                
+                    print(new_list[i])
+                    send_message_to_unity(new_list[i],ID, False)
+                    generate_answer(new_list[i], conversation_history,ID)
+                    ID+=1
             current_list = new_list
             lastnum = len(current_list)
             time.sleep(1.0)
