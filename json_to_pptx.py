@@ -59,7 +59,15 @@ def create_presentation(lesson_data):
 
     # 背景に使用する画像のパス
     background_img_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'image//kokuban.png')
-
+    # 新しい空のスライド（slide0）を追加
+    slide0 = prs.slides.add_slide(prs.slide_layouts[5])  # 空のレイアウト
+    # 背景画像を追加
+    width, height = prs.slide_width, prs.slide_height
+    enlarged_width, enlarged_height = width * 1.03, height * 1.03
+    left = (width - enlarged_width)/2  # 中央に配置
+    top = (height - enlarged_height)/2
+    slide0.shapes.add_picture(background_img_path, left, top, enlarged_width, enlarged_height)
+    
     for section in lesson_data:
         if '板書' in section:
             # 新しいスライドを追加
