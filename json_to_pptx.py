@@ -10,7 +10,7 @@ import glob
 from comtypes import client
 import datetime
 
-jsonfile_name="honji_tenkai_1202.json"#渡すJSONファイル名
+jsonfile_name="honji_tenkai_1213.json"#渡すJSONファイル名
 OUT_dir="lessondata"
 # 今日の日付を取得
 today = datetime.date.today()
@@ -91,12 +91,26 @@ def create_presentation(lesson_data):
             tf = txBox.text_frame
             p = tf.add_paragraph()
             p.word_wrap = True
-            formatted_text=text_format(section['板書'])
-            p.text = formatted_text.replace("。", "。\n")
-            p.font.size = Pt(28)
-            p.font.color.rgb = RGBColor(255, 255, 255)  # 白色
-
-            p.font.size = Pt(28)
+            section=section['板書']
+            if isinstance(section, str):
+                # セクションが文字列の場合
+                formatted_text = text_format(section)
+                p = tf.add_paragraph()
+                p.word_wrap = True
+                p.text = formatted_text.replace("。", "。\n")
+                p.font.size = Pt(28)
+                p.font.color.rgb = RGBColor(255, 255, 255)  # 白色
+                p.font.size = Pt(28)
+            elif isinstance(section, list):
+        # セクションがリストの場合
+                for item in section:
+                    formatted_text = text_format(item)
+                    p = tf.add_paragraph()
+                    p.word_wrap = True
+                    p.text = formatted_text.replace("。", "。\n")
+                    p.font.size = Pt(28)
+                    p.font.color.rgb = RGBColor(255, 255, 255)  # 白色
+                    p.font.size = Pt(28)
 
     pptx_name=jsonfile_name.replace(".json", "")
     prs.save(f'{OUT_dir}\\{pptx_name}_{today}.pptx')
